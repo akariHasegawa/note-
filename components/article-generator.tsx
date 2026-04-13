@@ -110,6 +110,7 @@ export function ArticleGenerator() {
           </div>
 
           <Button 
+            type="button"
             onClick={() => void handleGenerate()} 
             disabled={!topic.trim() || isGenerating}
             className="w-full"

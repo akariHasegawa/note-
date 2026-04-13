@@ -31,21 +31,38 @@ export async function generateArticle(topic: string, keywords?: string) {
 
 記事を作成してください:`
 
+  const { textStream } = streamText({
+    // gemini-2.0-flash は新規キーでは 404（提供終了メッセージ）になることがある
+    model: google('gemini-2.5-flash'),
+    prompt,
+    maxOutputTokens: 4000,
+    temperature: 0.7,
+  })
+
+  const iterator = textStream[Symbol.asyncIterator]()
+
+  try {
+    const first = await iterator.next()
+    if (first.done) {
+      stream.done()
+      return stream.value
+    }
+    // 返却前に1チャンク分 append しないと、Server Action の直後に
+    // readStreamableValue が初期ノードだけで終了し、1回目の生成が空になることがある
+    stream.append(first.value)
+  } catch (error) {
+    console.error('エラー詳細:', JSON.stringify(error, null, 2))
+    stream.error(error)
+    return stream.value
+  }
+
   ;(async () => {
     try {
-      const { textStream } = streamText({
-        // gemini-2.0-flash は新規キーでは 404（提供終了メッセージ）になることがある
-        model: google('gemini-2.5-flash'),
-        prompt,
-        maxOutputTokens: 4000,
-        temperature: 0.7,
-      })
-
-      // textStream のチャンクは差分なので append（update だと全文として扱われず壊れる）
-      for await (const chunk of textStream) {
-        stream.append(chunk)
+      for (;;) {
+        const { done, value } = await iterator.next()
+        if (done) break
+        stream.append(value)
       }
-
       stream.done()
     } catch (error) {
       console.error('エラー詳細:', JSON.stringify(error, null, 2))
