@@ -23,11 +23,12 @@ export async function generateArticle(topic: string, keywords?: string) {
 
 要件:
 - 読みやすく、親しみやすい文体で書いてください
-- 適切な見出し（##）を使用して構造化してください
-- 1500〜2500文字程度の記事を作成してください
-- 導入部分で読者の興味を引いてください
+- 適切な見出し（##）を使い、本文は「導入」「本論（2〜4セクション）」「まとめ」の流れにしてください
+- 全体でおおよそ 2000〜3500 文字を目安にしてください（短すぎず、冗長にもしない）
+- 各見出しの本文は段落として完結させ、**文や箇条書きの途中で終わらせないでください**
 - 具体例や体験談を含めてください
-- 最後にまとめを入れてください
+- 必ず最後に「## まとめ」（またはそれに相当する締めの見出し）を置き、読者への一言で記事を締めてから出力を終えてください
+- トークン上限に達して途中で切れる場合でも、**直前の段落を短くしてでも**必ずまとめまで書き切ることを最優先にしてください
 
 記事を作成してください:`
 
@@ -35,8 +36,9 @@ export async function generateArticle(topic: string, keywords?: string) {
     // gemini-2.0-flash は新規キーでは 404（提供終了メッセージ）になることがある
     model: google('gemini-2.5-flash'),
     prompt,
-    maxOutputTokens: 4000,
-    temperature: 0.7,
+    // 日本語の長文は消費トークンが大きい。4000 付近だと本論の途中で上限に達しがち
+    maxOutputTokens: 12000,
+    temperature: 0.65,
   })
 
   const iterator = textStream[Symbol.asyncIterator]()
